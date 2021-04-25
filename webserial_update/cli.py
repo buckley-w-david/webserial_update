@@ -12,7 +12,6 @@ from webserial_update.calibredb import CalibreDb
 from webserial_update.utils import most_recent_file, download_serial, normalize_url
 
 logging.getLogger("fanficfare").setLevel(logging.ERROR)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = typer.Typer()
