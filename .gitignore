@@ -12,3 +12,8 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+.direnv/
+.envrc
+config.toml
+urls.txt

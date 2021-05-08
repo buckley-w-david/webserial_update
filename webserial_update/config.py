@@ -4,6 +4,7 @@ from typing import Any, List, Dict
 import toml
 from pydantic import (
     BaseSettings,
+    FilePath,
     HttpUrl
 )
 
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     calibre_library: str
     calibre_username: str
     calibre_password: str
-    serial_urls: List[HttpUrl]
+    urls: FilePath
 
     class Config:
         env_prefix = 'WEBSERIAL_UPDATE_'
@@ -36,3 +37,4 @@ class Settings(BaseSettings):
                 toml_config_settings_source,
                 file_secret_settings,
             )
+

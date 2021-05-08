@@ -42,7 +42,7 @@ def most_recent_file(directory: DirectoryPath) -> FilePath:
 
 def download_serial(ebook: FilePath, url: HttpUrl, update: bool = True, force: bool = False) -> str:
     command = [
-         '/home/david/.local/bin/fanficfare',
+         'fanficfare',
     ]
 
     if update:
@@ -57,6 +57,7 @@ def download_serial(ebook: FilePath, url: HttpUrl, update: bool = True, force: b
     command.extend([
          '--non-interactive',
          '--option=is_adult=true',
+         '--option=always_overwrite=true',
          f'--option=output_filename={ebook}',
          str(url)
     ])

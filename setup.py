@@ -7,6 +7,7 @@ setup(
     install_requires=[
         'pydantic',
         'fanficfare',
+        'toml',
         'typer',
     ],
     entry_points = {

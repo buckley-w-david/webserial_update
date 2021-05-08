@@ -3,7 +3,6 @@ import os
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from typing import Optional, List
 
-import toml
 import typer
 
 from webserial_update.errors import WebserialUpdateError
@@ -14,14 +13,23 @@ from webserial_update.utils import most_recent_file, download_serial, normalize_
 logging.getLogger("fanficfare").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
+# TODO configurable log level
+logging.basicConfig(level=logging.INFO)
+
 app = typer.Typer()
+
+# TODO DRY this out
+# TODO Figure out how to marry pydantic settings and CLI args
 
 @app.command()
 def update():
     settings = Settings()
     calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
     with TemporaryDirectory() as tempdir:
-        for url in settings.serial_urls:
+        with open(settings.urls, 'r') as f:
+            serial_urls = [url.strip() for url in f.readlines()]
+
+        for url in serial_urls:
             normalized_url = normalize_url(url)
 
             search_query = f"Identifiers:url:{normalized_url}"
@@ -31,7 +39,7 @@ def update():
 
                 try:
                     with NamedTemporaryFile(suffix='.epub', dir=str(tempdir)) as f:
-                        download_serial(f.name, normalized_url, update=False, force=True)
+                        download_serial(f.name, normalized_url, update=False)
                         new_id = calibredb.add(f.name)
                         logger.info(f"Added %s as %s", url, new_id)
                 except WebserialUpdateError as e:
@@ -58,18 +66,36 @@ def update():
                 except Exception as e:
                     logger.error("🔥🔥🔥 %s 🔥🔥🔥". e)
 
+import re
+pattern = re.compile(r"url:([^\s,]+)")
+@app.command()
+def fetch(search_query: str):
+    settings = Settings()
+    calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
+    if search_query == 'all':
+        search_query = f"Identifiers:url:"
+
+    matching_ids = calibredb.search(search_query)
+    for calibre_id in matching_ids:
+        logger.info("Found %s for %s", calibre_id, search_query)
+        metadata = calibredb.get_metadata(calibre_id)
+        match = pattern.search(metadata.get('Identifiers', ''))
+        if match:
+            print(match.group(1))
+        else:
+            continue
 
 @app.command()
 def add(urls: List[str], also_update: bool = False):
-    config_file = os.environ.get('WEBSERIAL_UPDATE_CONFIG', 'config.toml')
+    settings = Settings()
 
-    with open(config_file, 'r') as f:
-        config = toml.load(f)
+    with open(settings.urls, 'r') as f:
+        serial_urls = [url.strip() for url in f.readlines()]
 
-    config['serial_urls'].extend(urls)
+    serial_urls.extend(urls)
 
-    with open(config_file, 'w') as f:
-        toml.dump(config, f)
+    with open(settings.urls, 'w') as f:
+        f.write('\n'.join(serial_urls))
 
     if also_update:
         update()
