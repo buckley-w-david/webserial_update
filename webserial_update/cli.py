@@ -21,14 +21,8 @@ app = typer.Typer()
 # TODO DRY this out
 # TODO Figure out how to marry pydantic settings and CLI args
 
-@app.command()
-def update():
-    settings = Settings()
-    calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
+def update_serials(calibredb: CalibreDb, serial_urls: List[str]):
     with TemporaryDirectory() as tempdir:
-        with open(settings.urls, 'r') as f:
-            serial_urls = [url.strip() for url in f.readlines()]
-
         for url in serial_urls:
             normalized_url = normalize_url(url)
 
@@ -66,6 +60,16 @@ def update():
                 except Exception as e:
                     logger.error("🔥🔥🔥 %s 🔥🔥🔥", e)
 
+@app.command()
+def update():
+    settings = Settings()
+    with open(settings.urls, 'r') as f:
+        serial_urls = [url.strip() for url in f.readlines()]
+
+    calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
+    update_serials(calibredb, serial_urls)
+
+
 import re
 pattern = re.compile(r"url:([^\s,]+)")
 @app.command()
@@ -93,12 +97,14 @@ def add(urls: List[str], also_update: bool = False):
         serial_urls = [url.strip() for url in f.readlines()]
 
     serial_urls.extend(urls)
+    dedupe = sorted(normalize_url(url) for url in set(serial_urls))
 
     with open(settings.urls, 'w') as f:
-        f.write('\n'.join(serial_urls))
+        f.write('\n'.join(dedupe))
 
     if also_update:
-        update()
+        calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
+        update_serials(calibredb, urls)
 
 if __name__ == '__main__':
     app()
