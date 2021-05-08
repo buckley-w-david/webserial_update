@@ -45,7 +45,7 @@ def update():
                 except WebserialUpdateError as e:
                     logger.warning("%s skipping", e)
                 except Exception as e:
-                    logger.error("🔥🔥🔥 %s 🔥🔥🔥". e)
+                    logger.error("🔥🔥🔥 %s 🔥🔥🔥", e)
             elif len(matching_ids) > 1:
                 logger.warning("%s returned more than 1 result. skipping", search_query)
             else:
@@ -64,7 +64,7 @@ def update():
                 except WebserialUpdateError as e:
                     logger.warning("%s skipping", e)
                 except Exception as e:
-                    logger.error("🔥🔥🔥 %s 🔥🔥🔥". e)
+                    logger.error("🔥🔥🔥 %s 🔥🔥🔥", e)
 
 import re
 pattern = re.compile(r"url:([^\s,]+)")
