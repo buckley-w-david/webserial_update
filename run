@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+
+if [ ! -p fifo ]; then
+    mkfifo fifo
+fi
+
+webserial_update fetch "Identifiers:url: AND NOT #blacklist:Yes" | tee urls.txt > fifo &
+WEBSERIAL_UPDATE_URLS=fifo webserial_update update

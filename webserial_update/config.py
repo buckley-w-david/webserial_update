@@ -1,10 +1,10 @@
 import os
 from typing import Any, List, Dict
+from pathlib import Path
 
 import toml
 from pydantic import (
     BaseSettings,
-    FilePath,
     HttpUrl
 )
 
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     calibre_library: str
     calibre_username: str
     calibre_password: str
-    urls: FilePath
+    urls: Path
 
     class Config:
         env_prefix = 'WEBSERIAL_UPDATE_'
