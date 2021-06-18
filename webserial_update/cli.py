@@ -106,5 +106,15 @@ def add(urls: List[str], also_update: bool = False):
         calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
         update_serials(calibredb, urls)
 
+from typing import Tuple
+@app.command(help="Apply specified metadata values to all supplied ids")
+def set_metadata(id: List[int] = typer.Option(None), name: List[str] = typer.Option(None), value: List[str] = typer.Option(None)):
+    settings = Settings()
+
+    calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
+    for serial_id in id:
+        calibredb.set_metadata(serial_id, zip(name, value))
+
+
 if __name__ == '__main__':
     app()

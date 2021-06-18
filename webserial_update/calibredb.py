@@ -1,6 +1,6 @@
 import re
 import subprocess
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from pydantic import FilePath, DirectoryPath
 
@@ -49,6 +49,15 @@ class CalibreDb:
             return ret
         else:
             return {}
+
+    def set_metadata(self, calibre_id: int, metadata: List[Tuple[str, str]]) -> None:
+        command = ['set_metadata', str(calibre_id)]
+        for name, value in metadata:
+            command.append(f"--field")
+            command.append(f"{name}:{value}")
+
+        completed_process = self.run(command)
+        return completed_process.stdout.decode('utf-8')
 
     def export(self, id: int, output_directory: DirectoryPath) -> str:
         completed_process = self.run(['export', str(id), '--dont-save-cover', '--dont-write-opf', '--single-dir', '--to-dir', str(output_directory)])
