@@ -8,7 +8,8 @@ import typer
 from webserial_update.errors import WebserialUpdateError
 from webserial_update.config import Settings
 from webserial_update.calibredb import CalibreDb
-from webserial_update.utils import most_recent_file, download_serial, normalize_url
+from webserial_update.fff import FanFicFare
+from webserial_update.utils import most_recent_file, normalize_url
 
 logging.getLogger("fanficfare").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -22,6 +23,8 @@ app = typer.Typer()
 # TODO Figure out how to marry pydantic settings and CLI args
 
 def update_serials(calibredb: CalibreDb, serial_urls: List[str]):
+    fanficfare = FanFicFare()
+
     with TemporaryDirectory() as tempdir:
         for url in serial_urls:
             normalized_url = normalize_url(url)
@@ -33,7 +36,7 @@ def update_serials(calibredb: CalibreDb, serial_urls: List[str]):
 
                 try:
                     with NamedTemporaryFile(suffix='.epub', dir=str(tempdir)) as f:
-                        download_serial(f.name, normalized_url, update=False)
+                        fanficfare.download_serial(f.name, normalized_url, update=False)
                         new_id = calibredb.add(f.name)
                         logger.info(f"Added %s as %s", url, new_id)
                 except WebserialUpdateError as e:
@@ -51,7 +54,7 @@ def update_serials(calibredb: CalibreDb, serial_urls: List[str]):
                 exported_serial = most_recent_file(tempdir)
 
                 try:
-                    download_serial(exported_serial, normalized_url, update=True)
+                    fanficfare.download_serial(exported_serial, normalized_url, update=True)
                     calibredb.remove(calibre_id)
                     new_id = calibredb.add(exported_serial)
                     logger.info(f"Added %s as %s", url, new_id)
@@ -106,15 +109,25 @@ def add(urls: List[str], also_update: bool = False):
         calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
         update_serials(calibredb, urls)
 
-from typing import Tuple
-@app.command(help="Apply specified metadata values to all supplied ids")
-def set_metadata(id: List[int] = typer.Option(None), name: List[str] = typer.Option(None), value: List[str] = typer.Option(None)):
+@app.command()
+def cleanup():
     settings = Settings()
 
     calibredb = CalibreDb(settings.calibre_username, settings.calibre_password, settings.calibre_library)
-    for serial_id in id:
-        calibredb.set_metadata(serial_id, zip(name, value))
+    fanficfare = FanFicFare()
 
+    search_query = "Identifiers:url: AND NOT #blacklist:Yes"
+
+    matching_ids = calibredb.search(search_query)
+    for calibre_id in matching_ids:
+        calibre_metadata = calibredb.get_metadata(calibre_id)
+        match = pattern.search(calibre_metadata.get('Identifiers', ''))
+        if match:
+            url = match.group(1)
+            fff_metadata = fanficfare.get_metadata(url)
+            if fff_metadata['status'] == 'Completed':
+                logger.info("%s is marked as Complete. Adding to blacklist. ", calibre_id)
+                calibredb.set_metadata(calibre_id, [('#blacklist', 'true')])
 
 if __name__ == '__main__':
     app()
