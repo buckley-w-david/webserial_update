@@ -1,6 +1,6 @@
 import re
 import subprocess
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 from pydantic import FilePath, DirectoryPath
 
@@ -50,17 +50,27 @@ class CalibreDb:
         else:
             return {}
 
-    def set_metadata(self, calibre_id: int, metadata: List[Tuple[str, str]]) -> None:
+    #                                                                         v - Dangerous mutable default arugment
+    def set_metadata(self, calibre_id: int, metadata: List[Tuple[str, str]] = [], metadata_file: FilePath = None) -> None:
         command = ['set_metadata', str(calibre_id)]
         for name, value in metadata:
             command.append(f"--field")
             command.append(f"{name}:{value}")
+        if metadata_file:
+            command.append(str(metadata_file))
 
         completed_process = self.run(command)
         return completed_process.stdout.decode('utf-8')
 
-    def export(self, id: int, output_directory: DirectoryPath) -> str:
-        completed_process = self.run(['export', str(id), '--dont-save-cover', '--dont-write-opf', '--single-dir', '--to-dir', str(output_directory)])
+    def export(self, id: int, output_directory: DirectoryPath, dont_save_cover=True, dont_write_opf=False) -> str:
+        command = ['export', str(id), '--single-dir']
+        if dont_save_cover:
+            command.append('--dont-save-cover')
+        if dont_write_opf:
+            command.append('--dont-write-opf')
+        command.extend(['--to-dir', str(output_directory)])
+
+        completed_process = self.run(command)
         return completed_process.stdout
 
     def remove(self, id: int) -> str:

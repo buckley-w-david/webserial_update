@@ -35,7 +35,7 @@ def normalize_url(url: HttpUrl) -> HttpUrl:
         if match:
             return MyModel(url=f"{match.group(1)}{prefix}{match.group(2)}").url
 
-def most_recent_file(directory: DirectoryPath) -> FilePath:
-    list_of_files = glob.glob(f'{directory}/*')
+def most_recent_file(directory: DirectoryPath, extension='epub') -> FilePath:
+    list_of_files = glob.glob(f'{directory}/*.{extension}')
     latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
